@@ -41,7 +41,7 @@ void initScanner(const char *source) {
 /**
  * @brief 判断字符是否为字母或下划线
  * @param c 待判断的字符
- * @return true 如果 c 是字母或下划线，否则返回 false
+ * @return 如果 c 是字母或下划线，返回 true，否则返回 false
  */
 static bool isAlpha(char c) {
 	return (c >= 'a' && c <= 'z') ||
@@ -52,7 +52,7 @@ static bool isAlpha(char c) {
 /**
  * @brief 判断字符是否为数字
  * @param c 待判断的字符
- * @return true 如果 c 是数字，否则返回 false
+ * @return 如果 c 是数字，返回 true，否则返回 false
  */
 static bool isDigit(char c) {
 	return c >= '0' && c <= '9';
@@ -60,7 +60,7 @@ static bool isDigit(char c) {
 
 /**
  * @brief 判断是否到达字符串末尾
- * @return true 如果当前字符是字符串末尾的空字符，否则返回 false
+ * @return 如果当前字符是字符串末尾的空字符，返回 true，否则返回 false
  */
 static bool isAtEnd() {
 	return *scanner.current == '\0';
@@ -97,7 +97,7 @@ static char peekNext() {
  * @brief 匹配预期字符
  * @details 如果当前字符符合预期，则将当前指针向前移动一个字符。
  * @param expected 预期的字符
- * @return true 如果当前字符符合预期，false 否则
+ * @return 如果当前字符符合预期返回 true，否则返回 false。
  */
 static bool match(char expected) {
 	if (isAtEnd()) {
@@ -121,11 +121,11 @@ static Token makeToken(TokenType type) {
 }
 
 /**
- * @brief 创建 Token
- * @details 根据 TokenType 类型和当前 Scanner 状态创建并返回一个 Token。\n
- * 遇到不能解析的情况时，我们创建一个 ERROR Token. 比如：遇到 @，$ 等符号时，比如字符串，字符没有对应的右引号时。
- * @param type Token 类型
- * @return 创建的 Token
+ * @brief 创建错误 Token
+ * @details 遇到不能解析的情况时，我们创建一个 ERROR Token。\n
+ * 比如：遇到 @，$ 等符号时，比如字符串，字符没有对应的右引号时。
+ * @param message 错误信息
+ * @return 错误 Token
  */
 static Token errorToken(const char *message) {
 	Token token;
