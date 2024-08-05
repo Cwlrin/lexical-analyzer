@@ -1,4 +1,3 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -19,17 +18,11 @@ static void run(const char *source) {
 			printf("%4d ", token.line);
 			line = token.line;
 		} else {
-			// 没有换行的打印效果
-			printf("   | "); // Token 在一行时使用竖杠是为了美观
+			// 没有换行的打印效果，使用竖杠是为了美观
+			printf("   | ");
 		}
 		char *str = convert_to_str(token);
-		/*
-			打印 Token 的字符序列
-			注意不能直接使用 %s, 因为 %s 会打印到空字符, 而空字符在源代码字符串的末尾
-			%.*s 转换说明
-			%.2s 表示打印一个字符串, 但只打印两个字符
-			* 表示占位符, 表示可以根据参数来取值
-		*/
+		// 打印 Token 的字符序列，使用 %.*s 避免打印到字符串末尾的空字符
 		printf("%s '%.*s'\n", str, token.length, token.start);
 
 		if (token.type == TOKEN_EOF) {
@@ -43,14 +36,16 @@ static void run(const char *source) {
  * @details 用户可以输入源代码行，逐行进行词法分析，并打印分析结果。
  */
 static void repl() {
-	// TODO
-	// repl 是"read evaluate print loop"的缩写
-	// repl 函数定义了一个交互式的读取 - 求值 - 打印循环（REPL）逻辑
-	// 它允许用户输入源代码行，逐行进行词法分析，并打印分析结果
-	// 也就是说启动时没有主动给出一个命令行参数表示文件路径的话, 那么就进行交互式界面进行词法分析
-	// 键盘输入一整行的字符串表示源代码，然后对此一行代码进行词法分析
-	// 这里应该存在一个死循环, 而且要逐行的读取键盘输入 fgets
-	// 此函数需要把键盘录入的一整行源代码，变成一个字符串，然后调用 run 函数
+	char line[1024]; // 1024 字符的缓冲区
+	for (;;) {
+		printf("> "); // 打印提示符
+		if (fgets(line, sizeof(line), stdin) == NULL) {
+			// 如果用户输入了 Ctrl+D, 则 fgets 返回 0, 此时退出循环
+			printf("\n");
+			break;
+		}
+		run(line); // 调用 run 函数处理用户输入的一行字符串
+	}
 }
 
 /**
@@ -60,9 +55,29 @@ static void repl() {
  * @note 使用者负责释放返回的内存。
  */
 static char *readFile(const char *path) {
-	// TODO
-	// 用户输入文件名，将整个文件的内容读入内存，并在末尾添加'\0'
-	// 注意: 这里应该使用动态内存分配，因此应该事先确定文件的大小。
+	FILE *file = fopen(path, "rb");
+	if (file == NULL) {
+		fprintf(stderr, "无法打开文件 \"%s\".\n", path);
+		exit(1);
+	}
+
+	fseek(file, 0, SEEK_END); // 获取文件大小
+	size_t size = ftell(file);
+	rewind(file); // 重置文件指针
+	char *buffer = malloc(size + 1);
+	if (buffer == NULL) {
+		fprintf(stderr, "内存不足，无法读取文件 \"%s\".\n", path);
+		exit(1);
+	}
+
+	size_t bytesRead = fread(buffer, sizeof(char), size, file); // 读取文件内容
+	if (bytesRead < size) {
+		fprintf(stderr, "无法读取文件 \"%s\" 的全部内容.\n", path);
+		exit(1);
+	}
+	buffer[size] = '\0';
+	fclose(file);
+	return buffer;
 }
 
 /**
@@ -82,7 +97,7 @@ static void runFile(const char *path) {
  * @return 程序退出码。
  * @note 主函数支持操作系统传递命令行参数，并根据参数决定程序行为。\n
  * 如果没有主动传入参数 (argc = 1), 因为第一个参数总会传入一个当前可执行文件的目录作为命令行参数，此时执行 repl 函数。\n
- * 如果传递了一个参数 (argc=2), 说明传递了一个参数, 将传递的参数视为某个源代码的路径，然后调用 runFile 函数, 传入该源代码文件的路径, 处理源文件。\n
+ * 如果传递了一个参数 (argc = 2), 说明传递了一个参数, 将传递的参数视为某个源代码的路径，然后调用 runFile 函数, 传入该源代码文件的路径, 处理源文件。\n
  * 如果传递多个参数 (argc > 2), 说明传递了多个参数, 进行错误处理。
  */
 int main(int argc, const char *argv[]) {
