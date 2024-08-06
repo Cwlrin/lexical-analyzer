@@ -126,7 +126,7 @@ static Token makeToken(TokenType type) {
 
 /**
  * @brief 创建错误 Token
- * @details 遇到不能解析的情况时，我们创建一个 ERROR Token。\n
+ * @details 遇到不能解析的情况时，创建一个 ERROR Token。\n
  * 比如：遇到 @，$ 等符号时，比如字符串，字符没有对应的右引号时
  * @param message 错误信息
  * @return 错误 Token
@@ -196,7 +196,7 @@ static TokenType checkKeyword(int start, int length, const char *rest, TokenType
 /**
  * @brief 确定 identifier 类型
  * 确定当前扫描的字符串是标识符还是关键字
- * @return 返回识别出的 TokenType，如果字符串是关键字，则返回对应的类型\n
+ * @return 返回识别出的 TokenType，如果字符串是关键字，则返回对应的类型 \n
  * 如果字符串是标识符，则返回 TOKEN_IDENTIFIER。
  */
 static TokenType identifierType() {
@@ -358,7 +358,7 @@ static Token string() {
 	while (!isAtEnd() && peek() != '"') {
 		// 如果当前字符是换行符，表示字符串跨越了多行，这是不允许的
 		if (peek() == '\n') {
-			return errorToken("不支持多行字符串!\n");
+			return errorToken("不支持多行字符串!");
 		}
 		advance(); // 继续检查下一个字符，直到字符串结束或文件结束。
 	}
@@ -377,28 +377,33 @@ static Token string() {
  * @return Token
  */
 static Token character() {
+	// 如果到达文件结束符，表示字符 Token 不完整，缺少右单引号
+	if (isAtEnd()) {
+		return errorToken("此字符不完整,缺少右单引号!");
+	}
 	// 确保当前字符不是空字符，且不是单引号
 	while (!isAtEnd() && peek() != '\'') {
 		// 循环直到遇到单引号或文件结束符
 		if (peek() == '\n') {
 			// 如果遇到换行符，表示字符 Token 跨越了多行，这是不允许的
-			return errorToken("不支持多行字符l!\n");
+			return errorToken("不支持多行字符!");
 		}
 		advance(); // 继续检查下一个字符
 	}
-	// 如果到达文件结束符，表示字符 Token 不完整，缺少右单引号
 	if (isAtEnd()) {
-		return errorToken("此字符不完整,缺少右单引号!\n");
+		return errorToken("此字符不完整,缺少右单引号!");
 	}
 	// 确认找到了右单引号，此时已经完成了字符 Token 的识别，需要检查单引号内是否正好有一个字符
-	int charLen = scanner.current - scanner.start - 1;
+	// 结束一个 Token 处理时，要保证 curr 指针移动向此 Token 的下一个位置
+	advance();
+	int charLen = scanner.current - scanner.start - 2;
 	// 如果单引号内只有一个字符，则构造并返回正常的字符 Token
-	if (charLen == 1) {
+	if (charLen == 1 || charLen == 0) {
 		return makeToken(TOKEN_CHARACTER);
 	}
 	// 如果单引号内字符数量不为一，这是不合法的字符 Token
 	// 构造并返回一个错误 Token，描述非法字符 Token 的内容
-	char *charStart = scanner.start + 1; // 指向字符 Token 的起始位置
+	char *charStart = (char *)(scanner.start + 1); // 指向字符 Token 的起始位置
 	sprintf(message, "非单字符Token: %.*s", charLen, charStart);
 	return errorToken(message);
 }
@@ -410,7 +415,7 @@ static Token character() {
  */
 static Token errorTokenWithChar(char character) {
 	// 将无法识别的字符输出
-	sprintf(message, "Unexpected character: %c", character);
+	sprintf(message, "意外字符：%c", character);
 	return errorToken(message);
 }
 

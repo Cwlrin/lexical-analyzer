@@ -110,7 +110,7 @@ int main(int argc, const char *argv[]) {
 	} else {
 		// 如果主动传入超过一个命令行参数. 即参数传递有误, 错误处理
 		// 告诉用户正确的使用函数的方式
-		fprintf(stderr, "Usage: scanner [path]\n");
+		fprintf(stderr, "用法：参数 [路径]\n");
 		exit(1);
 	}
 	return 0;

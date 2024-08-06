@@ -74,8 +74,8 @@ char *convert_to_str(Token token) {
 		case TOKEN_CONST: return "CONST";
 		case TOKEN_SIZEOF: return "SIZEOF";
 		case TOKEN_TYPEDEF: return "TYPEDEF";
-		case TOKEN_ERROR: return "错误";
-		case TOKEN_EOF: return "终止";
+		case TOKEN_ERROR: return "ERROR";
+		case TOKEN_EOF: return "EOF";
 		default: return "未知";
 	}
 }
