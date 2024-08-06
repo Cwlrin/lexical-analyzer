@@ -25,7 +25,7 @@ typedef enum {
 	TOKEN_DOT,           ///< '.' 点
 	TOKEN_SEMICOLON,     ///< ';' 分号
 	TOKEN_TILDE,         ///< '~' 波浪号
-	/** @} */ // end of SingleCharTokens group
+	/** @} */            // end of SingleCharTokens group
 
 	/**
 	 * @addtogroup SingleOrDoubleCharTokens 可能为单字符或双字符的 Token
@@ -62,7 +62,7 @@ typedef enum {
 	TOKEN_GREATER,         ///< '>' 大于比较运算符
 	TOKEN_GREATER_EQUAL,   ///< '>=' 大于等于比较运算符
 	TOKEN_GREATER_GREATER, ///< '>>' 右移运算符
-	/** @} */ // end of SingleOrDoubleCharTokens group
+	/** @} */              // end of SingleOrDoubleCharTokens group
 
 	/**
 	 * @TODO 所有的三字符 Token 都去掉了 >>= <<=
@@ -77,7 +77,7 @@ typedef enum {
 	TOKEN_CHARACTER,  ///< 字符
 	TOKEN_STRING,     ///< 字符串
 	TOKEN_NUMBER,     ///< 数字，包含整数和浮点数
-	/** @} */ // end of MultiCharTokens group
+	/** @} */         // end of MultiCharTokens group
 
 	/**
 	 * @addtogroup Keywords 关键字 Token
@@ -106,7 +106,7 @@ typedef enum {
 	TOKEN_ERROR, ///< Token 词法分析时遇到无法识别的文本
 	TOKEN_EOF    ///< 文件结束
 				 ///< Token 表示源代码已经分析完毕
-	/**@}*/ // end of AuxiliaryTokens group
+	/**@}*/      // end of AuxiliaryTokens group
 } TokenType;
 
 /** @} */ // end of TokenType group

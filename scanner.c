@@ -1,6 +1,6 @@
 #include <stdbool.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "scanner.h"
 
@@ -196,22 +196,111 @@ static TokenType checkKeyword(int start, int length, const char *rest, TokenType
 /**
  * @brief 确定 identifier 类型
  * 确定当前扫描的字符串是标识符还是关键字
- * @return TokenType
+ * @return 返回识别出的 TokenType，如果字符串是关键字，则返回对应的类型\n
+ * 如果字符串是标识符，则返回 TOKEN_IDENTIFIER。
  */
 static TokenType identifierType() {
-	// 确定 identifier 类型主要有两种方式：
-	// 1. 将所有的关键字放入哈希表中，然后查表确认
-	// Key-Value 就是"关键字-TokenType" 可以做 但存在额外内存占用且效率不如下一个方式好
-	// 2. 将所有的关键字放入 Trie 树 (字典查找树) 中，然后查表确认
-	// Trie 树的方式不管是空间上还是时间上都优于哈希表的方式
-	// 用 switch...switch...if 组合构建逻辑上的 trie 树
-	char first = scanner.start[0]; // 该 Token 的第一个字符
+	// 使用 switch...switch...if 结构模拟 Trie 树的查找过程
+	char first = scanner.start[0]; // 取得 Token 的第一个字符作为分类依据
 	switch (first) {
+		// keywords
 		case 'b': return checkKeyword(1, 4, "reak", TOKEN_BREAK);
-		case 'c': ;
-		// TODO
+		case 'c': {
+			int len = scanner.current - scanner.start;
+			if (len > 1) {
+				switch (scanner.start[1]) {
+					case 'a': return checkKeyword(2, 2, "se", TOKEN_CASE);
+					case 'h': return checkKeyword(2, 2, "ar", TOKEN_CHAR);
+					case 'o':
+						if (len > 3 && scanner.start[2] == 'n') {
+							switch (scanner.start[3]) {
+								case 's': return checkKeyword(4, 1, "t", TOKEN_CONST);
+								case 't': return checkKeyword(4, 4, "inue", TOKEN_CONTINUE);
+							}
+						}
+				}
+			}
+			break;
+		}
+		case 'd': {
+			int len = scanner.current - scanner.start;
+			if (len > 1) {
+				switch (scanner.start[1]) {
+					case 'e': return checkKeyword(2, 5, "fault", TOKEN_DEFAULT);
+					case 'o':
+						if (len == 2) return TOKEN_DO;
+						else return checkKeyword(2, 4, "uble", TOKEN_DOUBLE);
+				}
+			}
+			break;
+		}
+		case 'e': {
+			int len = scanner.current - scanner.start;
+			if (len > 1) {
+				switch (scanner.start[1]) {
+					case 'l': return checkKeyword(2, 2, "se", TOKEN_ELSE);
+					case 'n': return checkKeyword(2, 2, "um", TOKEN_ENUM);
+				}
+			}
+			break;
+		}
+		case 'f': {
+			int len = scanner.current - scanner.start;
+			if (len > 1) {
+				switch (scanner.start[1]) {
+					case 'l': return checkKeyword(2, 3, "oat", TOKEN_FLOAT);
+					case 'o': return checkKeyword(2, 1, "r", TOKEN_FOR);
+				}
+			}
+			break;
+		}
+		case 'g': return checkKeyword(1, 3, "oto", TOKEN_GOTO);
+		case 'i': {
+			int len = scanner.current - scanner.start;
+			if (len > 1) {
+				switch (scanner.start[1]) {
+					case 'f': return checkKeyword(2, 0, "", TOKEN_IF);
+					case 'n': return checkKeyword(2, 1, "t", TOKEN_INT);
+				}
+			}
+			break;
+		}
+		case 'l': return checkKeyword(1, 3, "ong", TOKEN_LONG);
+		case 'r': return checkKeyword(1, 5, "eturn", TOKEN_RETURN);
+		case 's': {
+			int len = scanner.current - scanner.start;
+			if (len > 1) {
+				switch (scanner.start[1]) {
+					case 'h': return checkKeyword(2, 3, "ort", TOKEN_SHORT);
+					case 'i':
+						if (len > 2) {
+							switch (scanner.start[2]) {
+								case 'g': return checkKeyword(3, 3, "ned", TOKEN_SIGNED);
+								case 'z': return checkKeyword(3, 3, "eof", TOKEN_SIZEOF);
+							}
+						}
+						break;
+					case 't': return checkKeyword(2, 4, "ruct", TOKEN_STRUCT);
+					case 'w': return checkKeyword(2, 4, "itch", TOKEN_SWITCH);
+				}
+			}
+			break;
+		}
+		case 't': return checkKeyword(1, 6, "ypedef", TOKEN_TYPEDEF);
+		case 'u': {
+			int len = scanner.current - scanner.start;
+			if (len > 2 && scanner.start[1] == 'n') {
+				switch (scanner.start[2]) {
+					case 'i': return checkKeyword(3, 2, "on", TOKEN_UNION);
+					case 's': return checkKeyword(3, 5, "igned", TOKEN_UNSIGNED);
+				}
+			}
+			break;
+		}
+		case 'v': return checkKeyword(1, 3, "oid", TOKEN_VOID);
+		case 'w': return checkKeyword(1, 4, "hile", TOKEN_WHILE);
 	}
-	// 没有进 switch 一定是标识符
+	// 默认情况，如果以上关键字都不匹配，则返回标识符类型
 	return TOKEN_IDENTIFIER;
 }
 
@@ -379,11 +468,11 @@ Token scanToken() {
 				return makeToken(TOKEN_MINUS);
 			}
 		case '*':
-			return makeToken(match('=')? TOKEN_STAR_EQUAL : TOKEN_STAR);
+			return makeToken(match('=') ? TOKEN_STAR_EQUAL : TOKEN_STAR);
 		case '/':
-			return makeToken(match('=')? TOKEN_SLASH_EQUAL : TOKEN_SLASH);
+			return makeToken(match('=') ? TOKEN_SLASH_EQUAL : TOKEN_SLASH);
 		case '%':
-			return makeToken(match('=')? TOKEN_PERCENT_EQUAL : TOKEN_PERCENT);
+			return makeToken(match('=') ? TOKEN_PERCENT_EQUAL : TOKEN_PERCENT);
 		case '&':
 			if (match('=')) {
 				return makeToken(TOKEN_AMPER_EQUAL);
@@ -401,11 +490,11 @@ Token scanToken() {
 				return makeToken(TOKEN_PIPE);
 			}
 		case '^':
-			return makeToken(match('=')? TOKEN_HAT_EQUAL : TOKEN_HAT);
+			return makeToken(match('=') ? TOKEN_HAT_EQUAL : TOKEN_HAT);
 		case '=':
-			return makeToken(match('=')? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
+			return makeToken(match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
 		case '!':
-			return makeToken(match('=')? TOKEN_BANG_EQUAL : TOKEN_BANG);
+			return makeToken(match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
 		case '<':
 			if (match('=')) {
 				return makeToken(TOKEN_LESS_EQUAL);
