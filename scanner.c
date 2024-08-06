@@ -138,16 +138,37 @@ static Token errorToken(const char *message) {
 
 /**
  * @brief 跳过空白字符
- * 跳过包括空格、制表符、回车和换行在内的空白字符，以及单行注释。
+ * @details 此函数将 scanner 的当前位置向前移动，跳过所有空白字符和单行注释，
+ * 直到遇到非空白字符或源代码结束。
  */
 static void skipWhitespace() {
-	// @TODO
-	// 跳过空白字符: ' ', '\r', '\t', '\n'和单行注释
-	// 注释以'//'开头, 一直到行尾
-	// 注意更新 scanner.line！
-
-	// 提示: 整个过程需要跳过中间的很多字符, 所以需要死循环
-	// 最终目的是让 curr 指针指向下一个 Token 的首字符
+	for (;;) {
+		char c = peek(); // 查看当前字符
+		switch (c) {
+			case ' ':  // 空格
+			case '\r': // 回车
+			case '\t': // 制表符
+			case '\n': // 换行符
+				// 如果当前字符是空白字符，移动到下一个字符
+				advance();
+				break;
+			case '/': // 正斜杠，可能是注释或分号
+				// 如果当前字符是正斜杠，检查下一个字符以确定是否为注释
+				if (peekNext() == '/') {
+					// 单行注释，跳过直到行尾或源代码结束
+					while (peek() != '\n' && !isAtEnd()) {
+						advance();
+					}
+				} else {
+					// 如果不是注释，说明已经到达有效的 Token，退出循环
+					return;
+				}
+				break;
+			default:
+				// 对于任何其他字符，说明已经到达有效的 Token，退出循环
+				return;
+		}
+	}
 }
 
 /**
@@ -213,7 +234,7 @@ static TokenType identifierType() {
 
 /**
  * @brief 处理标识符 Token
- * 如果当前字符是字母或下划线，处理标识符 Token。
+ * 如果当前字符是字母或下划线，处理标识符 Token
  * @return Token
  */
 static Token identifier() {
@@ -232,18 +253,26 @@ static Token identifier() {
 
 /**
  * @brief 处理数字 Token
- * 处理数字 Token，包括整数和小数。
- * @return Token
+ * 根据预定义的规则，识别数字（包括整数和小数），并构造相应的 Token
+ * @return 返回类型为 TOKEN_NUMBER 的 Token
  */
 static Token number() {
-	// @TODO
-	// 简单起见，我们将 NUMBER 的规则定义如下:
-	// 1. NUMBER 可以包含数字和最多一个'.'号
-	// 2. '.'号前面要有数字
-	// 3. '.'号后面也要有数字
-	// 这些都是合法的 NUMBER: 123, 3.14
-	// 这些都是不合法的 NUMBER: 123., .14(虽然在 C 语言中合法)
-	// 提示: 这个过程需要不断的跳过中间的数字包括小数点, 所以也需要循环
+	// 识别数字的整数部分，包括数字零和正整数
+	while (isDigit(peek())) {
+		advance();
+	}
+
+	// 检查是否遇到小数点，并验证小数点后是否有数字
+	if (peek() == '.' && isDigit(peekNext())) {
+		// 确认小数点后跟有数字，构造小数 Token
+		advance();
+		// 继续循环以识别小数点后的数字部分，根据规则，小数点后必须有至少一位数字
+		while (isDigit(peek())) {
+			advance();
+		}
+	}
+	// 无论数字是整数还是小数，都使用相同的 Token 类型 TOKEN_NUMBER
+	return makeToken(TOKEN_NUMBER);
 }
 
 /**
@@ -312,7 +341,7 @@ static Token errorTokenWithChar(char character) {
  * @return Token
  */
 Token scanToken() {
-	// 跳过前置空白字符和注释
+	// 跳过所有前置的空白字符和注释，将 scanner.current 指向下一个有效的 Token 起始位置
 	skipWhitespace();
 	// 记录下一个 Token 的起始位置
 	scanner.start = scanner.current;
@@ -321,36 +350,29 @@ Token scanToken() {
 	if (isAtEnd()) {
 		return makeToken(TOKEN_EOF);
 	}
-	// 代码运行到这里, 说明 curr 指向的不是空字符, 那就继续处理
-	/*
-		(重点!!!!)
-		调用 advance 函数,curr 指针指向了此 Token 的第二个字符
-		但是 c 仍然是 Token 的第一个字符!!!!
-	*/
 	char c = advance();
-
-	// 如果此 Token 的第一个字符是字母或下划线, 那么就进入标识符的处理模式
-	// 同时关键字也合并在这里处理
+	// 如果当前字符是字母或下划线，进入标识符或关键字的识别流程
 	if (isAlpha(c)) {
 		return identifier();
 	}
-	// 如果此 Token 的第一个字符是数字, 那就进入数字的处理模式
+	// 如果当前字符是数字，进入数字的识别流程。
 	if (isDigit(c)) {
 		return number();
 	}
-	// 如果 Token 的第一个字符既不是数字也不是字母和下划线, 那么说明此 Token 既不是标识符, 也不是数字
-	// 那就 switch 处理这个 Token
+
+	// 根据当前字符，通过 switch 语句识别和处理各种单字符和多字符的 Token。
 	switch (c) {
-		// 第一部分: 处理单字符 Token
+		// 处理单字符 Token
 		case '(': return makeToken(TOKEN_LEFT_PAREN);
 		case ')': return makeToken(TOKEN_RIGHT_PAREN);
-		// ...TODO 还有比如 {};,.
-
-		// 第二部分: 可单可双字符的 Token 处理会稍微复杂一点, 但不多
-		// 如果 Token 的第一个字符是 + 号
+		case '{': return makeToken(TOKEN_LEFT_BRACE);
+		case '}': return makeToken(TOKEN_RIGHT_BRACE);
+		case ',': return makeToken(TOKEN_COMMA);
+		case '.': return makeToken(TOKEN_DOT);
+		case ';': return makeToken(TOKEN_SEMICOLON);
+		case '~': return makeToken(TOKEN_TILDE);
+		// 处理可能的双字符 Token
 		case '+':
-			// curr 指针当前已经指向了 Token 的第二个字符, 也就是当前正在处理第二个字符
-			// 如果 Token 的第二个字符也是 +, 那就生产 ++ 双字符 Token ++ 返回
 			if (match('+')) {
 				return makeToken(TOKEN_PLUS_PLUS);
 			} else if (match('=')) {
@@ -358,10 +380,65 @@ Token scanToken() {
 			} else {
 				return makeToken(TOKEN_PLUS);
 			}
-		// ...TODO -,*,/
-		case '"': return string();     // 如果 Token 的第一个字符是双引号, 那就进入字符串的处理模式
-		case '\'': return character(); // 如果 Token 的第一个字符是单引号, 那就进入字符的处理模式
+		case '-':
+			if (match('-')) {
+				return makeToken(TOKEN_MINUS_MINUS);
+			} else if (match('=')) {
+				return makeToken(TOKEN_MINUS_EQUAL);
+			} else if (match('>')) {
+				return makeToken(TOKEN_MINUS_GREATER);
+			} else {
+				return makeToken(TOKEN_MINUS);
+			}
+		case '*':
+			return makeToken(match('=') ? TOKEN_STAR_EQUAL : TOKEN_STAR);
+		case '/':
+			return makeToken(match('=') ? TOKEN_SLASH_EQUAL : TOKEN_SLASH);
+		case '%':
+			return makeToken(match('=') ? TOKEN_PERCENT_EQUAL : TOKEN_PERCENT);
+		case '&':
+			if (match('=')) {
+				return makeToken(TOKEN_AMPER_EQUAL);
+			} else if (match('&')) {
+				return makeToken(TOKEN_AMPER_AMPER);
+			} else {
+				return makeToken(TOKEN_AMPER);
+			}
+		case '|':
+			if (match('=')) {
+				return makeToken(TOKEN_PIPE_EQUAL);
+			} else if (match('|')) {
+				return makeToken(TOKEN_PIPE_PIPE);
+			} else {
+				return makeToken(TOKEN_PIPE);
+			}
+		case '^':
+			return makeToken(match('=') ? TOKEN_HAT_EQUAL : TOKEN_HAT);
+		case '=':
+			return makeToken(match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
+		case '!':
+			return makeToken(match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
+		case '<':
+			if (match('=')) {
+				return makeToken(TOKEN_LESS_EQUAL);
+			} else if (match('<')) {
+				return makeToken(TOKEN_LESS_LESS);
+			} else {
+				return makeToken(TOKEN_LESS);
+			}
+		case '>':
+			if (match('=')) {
+				return makeToken(TOKEN_GREATER_EQUAL);
+			} else if (match('>')) {
+				return makeToken(TOKEN_GREATER_GREATER);
+			} else {
+				return makeToken(TOKEN_GREATER);
+			}
+		// 处理字符串和字符字面量 Token。
+		case '"': return string();     // 字符串处理模式
+		case '\'': return character(); // 字符处理模式
+		// 如果当前字符不匹配任何已知 Token 类型，则生成一个错误 Token
+		default:
+			return errorTokenWithChar(c);
 	}
-	// 如果上述处理都没有处理成功, 都没有生成合适的 Token, 说明该字符无法识别
-	return errorTokenWithChar(c);
 }
