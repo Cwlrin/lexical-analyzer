@@ -6,8 +6,8 @@
 
 /**
  * @brief Scanner 结构体
- * @details 词法分析器的核心数据结构，包含当前正在扫描的 Token 的起始指针、当前处理指针、行号等。\n
- * 该结构体为内部实现细节，不对外暴露。
+ * @details 词法分析器的核心数据结构，包含当前正在扫描的 Token 的起始指针、当前处理指针、行号等 \n
+ * 该结构体为内部实现细节，不对外暴露
  */
 typedef struct {
 	const char *start;   ///< 指向当前正在扫描的 Token 的起始字符
@@ -17,13 +17,13 @@ typedef struct {
 
 /**
  * @brief 全局 Scanner 实例
- * @details 静态全局变量，用于存储词法分析器的状态。
+ * @details 静态全局变量，用于存储词法分析器的状态
  */
 static Scanner scanner;
 
 /**
  * @brief 错误信息缓冲区
- * @details 用于存储词法分析器处理错误 Token 时的错误信息。
+ * @details 用于存储词法分析器处理错误 Token 时的错误信息
  */
 static char message[50];
 
@@ -97,7 +97,7 @@ static char peekNext() {
  * @brief 匹配预期字符
  * @details 如果当前字符符合预期，则将当前指针向前移动一个字符。
  * @param expected 预期的字符
- * @return 如果当前字符符合预期返回 true，否则返回 false。
+ * @return 如果当前字符符合预期返回 true，否则返回 false
  */
 static bool match(char expected) {
 	if (isAtEnd()) {
@@ -110,7 +110,11 @@ static bool match(char expected) {
 	return true;       // 只有符合预期才会返回 true 而且 curr 会前进一位
 }
 
-// 根据传入的 TokenType 类型来制造返回一个 Token
+/**
+ * @brief 根据传入的 TokenType 类型来制造返回一个 Token
+ * @param type 要创建的 Token 的类型
+ * @return Token 结构体
+ */
 static Token makeToken(TokenType type) {
 	Token token;
 	token.type = type;
@@ -123,7 +127,7 @@ static Token makeToken(TokenType type) {
 /**
  * @brief 创建错误 Token
  * @details 遇到不能解析的情况时，我们创建一个 ERROR Token。\n
- * 比如：遇到 @，$ 等符号时，比如字符串，字符没有对应的右引号时。
+ * 比如：遇到 @，$ 等符号时，比如字符串，字符没有对应的右引号时
  * @param message 错误信息
  * @return 错误 Token
  */
@@ -139,7 +143,7 @@ static Token errorToken(const char *message) {
 /**
  * @brief 跳过空白字符
  * @details 此函数将 scanner 的当前位置向前移动，跳过所有空白字符和单行注释，
- * 直到遇到非空白字符或源代码结束。
+ * 直到遇到非空白字符或源代码结束
  */
 static void skipWhitespace() {
 	for (;;) {
@@ -152,7 +156,7 @@ static void skipWhitespace() {
 				// 如果当前字符是空白字符，移动到下一个字符
 				advance();
 				break;
-			case '/': // 正斜杠，可能是注释或分号
+			case '/': // 正斜杠，可能是注释或除号
 				// 如果当前字符是正斜杠，检查下一个字符以确定是否为注释
 				if (peekNext() == '/') {
 					// 单行注释，跳过直到行尾或源代码结束
@@ -173,7 +177,7 @@ static void skipWhitespace() {
 
 /**
  * @brief 检查关键字
- * 检查从当前 Scanner 起始位置开始的特定长度的字符串是否为指定的关键字。
+ * 检查从当前 Scanner 起始位置开始的特定长度的字符串是否为指定的关键字
  * @param start 待检查序列的起始字符下标
  * @param length 待检查序列的长度
  * @param rest 待检查的剩余序列字符串
@@ -181,30 +185,9 @@ static void skipWhitespace() {
  * @return 如果匹配关键字，返回相应的 TokenType，否则返回 TOKEN_IDENTIFIER
  */
 static TokenType checkKeyword(int start, int length, const char *rest, TokenType type) {
-	/*
-		start: 待检查序列的起始字符下标
-			比如要检查关键字 break，那么在 case b 的前提下，需要传入 reak 来进行检查
-			这里 start 就等于 1，scanner.start[1]
-		length: 待检查序列的长度，如果检查的是 break，就是检查剩余的 reak
-			需要传入 4
-		rest 指针，待检查的剩余序列字符串，这里直接传入一个字面值字符串就行了
-			比如检查 break，传入"reak"就好了
-		type：你要检查的关键字 Token 的类型，比如检查 break，那就传入 Token_BREAK
-	*/
-	if (scanner.current - scanner.start == start + length &&
-		/*
-					int memcmp(const void *s1, const void *s2, size_t n);
-					这里的参数分别是：
-
-					s1：指向第一块内存区域的指针。
-					s2：指向第二块内存区域的指针。
-					n：要比较的字节数。
-					memcmp 函数会逐字节比较 s1 和 s2 指向的内存区域，直到有不相等的字节或比较了 n 个字节为止。
-					如果两个内存区域完全相同，
-					则 memcmp 返回 0；如果第一个不同的字节在 s1 中的值小于 s2 中对应的值，返回负数；
-					反之，返回正数。
-		*/
-		memcmp(scanner.start + start, rest, length) == 0) {
+	// 检查当前扫描的位置与预期的关键字起始位置加上长度是否匹配
+	// 即确认扫描器的当前位置是否在预期的关键字之后
+	if (scanner.current - scanner.start == start + length && memcmp(scanner.start + start, rest, length) == 0) {
 		return type;
 	}
 	return TOKEN_IDENTIFIER;
@@ -212,7 +195,7 @@ static TokenType checkKeyword(int start, int length, const char *rest, TokenType
 
 /**
  * @brief 确定 identifier 类型
- * 确定当前扫描的字符串是标识符还是关键字。
+ * 确定当前扫描的字符串是标识符还是关键字
  * @return TokenType
  */
 static TokenType identifierType() {
@@ -234,26 +217,27 @@ static TokenType identifierType() {
 
 /**
  * @brief 处理标识符 Token
- * 如果当前字符是字母或下划线，处理标识符 Token
- * @return Token
+ * @details 识别并构造以字母或下划线开头，后跟任意数量的字母、下划线或数字的标识符 Token
+ * @return 返回类型为 TOKEN_IDENTIFIER 或特定关键字类型的
  */
 static Token identifier() {
-	// 判断 curr 指针当前正在处理的字符是不是 字母 下划线 数字
+	// 循环以识别标识符的字符序列，只要当前字符是字母、下划线或数字，就继续读取下一个字符
+	// 循环将自动跳过标识符中的所有字符，直到遇到非标识符字符
 	while (isAlpha(peek()) || isDigit(peek())) {
-		advance(); // 继续前进看下一个字符 直到碰到下一个字符不是字母 下划线 以及数字 结束 Token
+		advance(); // 移动到下一个字符，继续构建标识符 Token
 	}
-	// @TODO
-	// 当 while 循环结束时，curr 指针指向的是该 Token 字符串的下一个字符
-	// 这个函数的意思是: 只要读到字母或下划线开头的 Token 我们就进入标识符模式
-	// 然后一直找到此 Token 的末尾
-	// 但代码运行到这里还不确定 Token 是标识符还是关键字, 因为它可能是 break, var, goto, max_val...
-	// 于是执行 identifierType() 函数，它是用来确定 Token 类型的
-	return makeToken(identifierType());
+	// 循环结束后，当前字符不是字母、下划线或数字，表示已经到达标识符的末尾
+	// 此时，scanner.start 指向标识符的开始，而 scanner.current 指向标识符的下一个字符
+	// 使用 identifierType() 函数判断当前扫描的标识符是普通标识符还是关键字
+	// 这个函数会根据标识符的字符串内容返回相应的 TokenType
+	TokenType type = identifierType();
+	// 构造并返回 Token
+	return makeToken(type);
 }
 
 /**
  * @brief 处理数字 Token
- * 根据预定义的规则，识别数字（包括整数和小数），并构造相应的 Token
+ * @details 根据预定义的规则，识别数字（包括整数和小数），并构造相应的 Token
  * @return 返回类型为 TOKEN_NUMBER 的 Token
  */
 static Token number() {
@@ -261,7 +245,6 @@ static Token number() {
 	while (isDigit(peek())) {
 		advance();
 	}
-
 	// 检查是否遇到小数点，并验证小数点后是否有数字
 	if (peek() == '.' && isDigit(peekNext())) {
 		// 确认小数点后跟有数字，构造小数 Token
@@ -277,67 +260,74 @@ static Token number() {
 
 /**
  * @brief 处理字符串 Token
- * 处理以双引号开头和结尾的字符串 Token。
+ * @details 处理以双引号开头和结尾的字符串 Token
  * @return Token
  */
 static Token string() {
-	// TODO
-	// 字符串必须以"开头，以"结尾，而且不能跨行，不支持转义字符
-	// 如果下一个字符不是末尾也不是双引号，全部跳过 (curr 可以记录长度，不用担心)
+	// 字符串必须以双引号开头和结尾，不能跨越多行，不支持转义字符
+	// 循环直到遇到双引号或文件结束符
+	while (!isAtEnd() && peek() != '"') {
+		// 如果当前字符是换行符，表示字符串跨越了多行，这是不允许的
+		if (peek() == '\n') {
+			return errorToken("不支持多行字符串!\n");
+		}
+		advance(); // 继续检查下一个字符，直到字符串结束或文件结束。
+	}
+	// 检查是否到达文件结束符，如果没有找到结束的双引号，表示字符串未终止
+	if (isAtEnd()) {
+		return errorToken("未终止的字符串字面量！");
+	}
+	// 找到字符串结束的双引号，构造字符串 Token 并返回
+	advance();
+	return makeToken(TOKEN_STRING);
 }
-/*
-	词法分析器处理字符的模式
-	首先要分析此词法分析的状态
-	此时 scanner.start 指向左单引号
-	而 scanner.curr 指向左单引号的下一个字符, 也就是单引号中间的第一个字符
-*/
+
 /**
  * @brief 处理字符 Token
- * 处理以单引号开头和结尾的字符 Token。
+ * @details 处理以单引号开头和结尾的字符 Token
  * @return Token
  */
 static Token character() {
-	// 字符'开头，以'结尾，而且不能跨行，不支持转义字符，''中间必须只有一个字符
-	// 如果下一个字符不是末尾也不是单引号，全部跳过 (curr 可以记录长度，不用担心)
-
-	// 1. 判断当前 curr 指向的是不是空字符, 如果是空字符, 那就返回一个 errToken
-	//if (isAtEnd()) {
-	//	return errorToken("此字符不完整,缺少右单引号!\n");
-	//}
-	// 2. 让 curr 指针继续走, 找到右单引号
+	// 确保当前字符不是空字符，且不是单引号
 	while (!isAtEnd() && peek() != '\'') {
-		// 如果当前正在处理的字符既不是空字符, 也不是右单引号, 那就继续走
+		// 循环直到遇到单引号或文件结束符
 		if (peek() == '\n') {
-			return errorToken("不支持多行字符!\n");
+			// 如果遇到换行符，表示字符 Token 跨越了多行，这是不允许的
+			return errorToken("不支持多行字符l!\n");
 		}
-		advance();
-	} // while 循环结束时, 要么处理到了空字符, 要么处理到了右单引号
+		advance(); // 继续检查下一个字符
+	}
+	// 如果到达文件结束符，表示字符 Token 不完整，缺少右单引号
 	if (isAtEnd()) {
 		return errorToken("此字符不完整,缺少右单引号!\n");
 	}
-	// 找到了右单引号, 要判断一下此字符是不是单个长度, 单引号中出现多个字符是不允许的
+	// 确认找到了右单引号，此时已经完成了字符 Token 的识别，需要检查单引号内是否正好有一个字符
 	int charLen = scanner.current - scanner.start - 1;
+	// 如果单引号内只有一个字符，则构造并返回正常的字符 Token
 	if (charLen == 1) {
 		return makeToken(TOKEN_CHARACTER);
 	}
-	// 需求: 现在单引号中间的字符序列长度超长了, 于是要打印这个超长的序列
-	// 输出效果是: 非单字符 Token: xxx(单引号中间的序列)
-	char *charStart = scanner.start + 1;
-	// 我们需要格式化的向目标字符数组中输出一个字符串
+	// 如果单引号内字符数量不为一，这是不合法的字符 Token
+	// 构造并返回一个错误 Token，描述非法字符 Token 的内容
+	char *charStart = scanner.start + 1; // 指向字符 Token 的起始位置
 	sprintf(message, "非单字符Token: %.*s", charLen, charStart);
 	return errorToken(message);
 }
 
-// 处理无法识别的字符
+/**
+ * @brief 处理无法识别的字符
+ * @param character 字符
+ * @return Token 错误信息
+ */
 static Token errorTokenWithChar(char character) {
-	// 将无法识别的字符是什么输出
+	// 将无法识别的字符输出
 	sprintf(message, "Unexpected character: %c", character);
 	return errorToken(message);
 }
 
 /**
  * @brief 词法分析器核心逻辑
- * 返回一个制作好的 Token。
+ * @details 返回一个制作好的 Token
  * @return Token
  */
 Token scanToken() {
@@ -345,7 +335,6 @@ Token scanToken() {
 	skipWhitespace();
 	// 记录下一个 Token 的起始位置
 	scanner.start = scanner.current;
-
 	// 如果 curr 指向了空字符, 那么就已经处理源代码完毕了, 直接返回 TOKEN_EOF
 	if (isAtEnd()) {
 		return makeToken(TOKEN_EOF);
@@ -355,12 +344,11 @@ Token scanToken() {
 	if (isAlpha(c)) {
 		return identifier();
 	}
-	// 如果当前字符是数字，进入数字的识别流程。
+	// 如果当前字符是数字，进入数字的识别流程
 	if (isDigit(c)) {
 		return number();
 	}
-
-	// 根据当前字符，通过 switch 语句识别和处理各种单字符和多字符的 Token。
+	// 根据当前字符，通过 switch 语句识别和处理各种单字符和多字符的 Token
 	switch (c) {
 		// 处理单字符 Token
 		case '(': return makeToken(TOKEN_LEFT_PAREN);
@@ -391,11 +379,11 @@ Token scanToken() {
 				return makeToken(TOKEN_MINUS);
 			}
 		case '*':
-			return makeToken(match('=') ? TOKEN_STAR_EQUAL : TOKEN_STAR);
+			return makeToken(match('=')? TOKEN_STAR_EQUAL : TOKEN_STAR);
 		case '/':
-			return makeToken(match('=') ? TOKEN_SLASH_EQUAL : TOKEN_SLASH);
+			return makeToken(match('=')? TOKEN_SLASH_EQUAL : TOKEN_SLASH);
 		case '%':
-			return makeToken(match('=') ? TOKEN_PERCENT_EQUAL : TOKEN_PERCENT);
+			return makeToken(match('=')? TOKEN_PERCENT_EQUAL : TOKEN_PERCENT);
 		case '&':
 			if (match('=')) {
 				return makeToken(TOKEN_AMPER_EQUAL);
@@ -413,11 +401,11 @@ Token scanToken() {
 				return makeToken(TOKEN_PIPE);
 			}
 		case '^':
-			return makeToken(match('=') ? TOKEN_HAT_EQUAL : TOKEN_HAT);
+			return makeToken(match('=')? TOKEN_HAT_EQUAL : TOKEN_HAT);
 		case '=':
-			return makeToken(match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
+			return makeToken(match('=')? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
 		case '!':
-			return makeToken(match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
+			return makeToken(match('=')? TOKEN_BANG_EQUAL : TOKEN_BANG);
 		case '<':
 			if (match('=')) {
 				return makeToken(TOKEN_LESS_EQUAL);
@@ -434,7 +422,7 @@ Token scanToken() {
 			} else {
 				return makeToken(TOKEN_GREATER);
 			}
-		// 处理字符串和字符字面量 Token。
+		// 处理字符串和字符字面量 Token
 		case '"': return string();     // 字符串处理模式
 		case '\'': return character(); // 字符处理模式
 		// 如果当前字符不匹配任何已知 Token 类型，则生成一个错误 Token
